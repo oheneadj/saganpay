@@ -37,16 +37,15 @@ class ECGProvider implements PaymentProviderInterface
         ]);
 
         $payload = [
-            'CustomerName' => $data['customer_name'] ?? 'SaganPay User',
-            'CustomerMsisdn' => $data['mobile_number'],
-            'CustomerEmail' => $data['email'],
-            'Channel' => $data['channel'] ?? 'mobilemoney',
+            'Destination' => $data['mobile_number'],
             'Amount' => (float) $data['amount'],
-            'PrimaryCallbackUrl' => route('payment.callback'),
-            'Description' => 'ECG Payment for ' . $data['account_number'],
+            'Channel' => $data['channel'] ?? 'mobilemoney',
+            'CallbackUrl' => route('payment.callback'),
             'ClientReference' => $clientReference,
-            'ServiceId' => $this->serviceId,
-            'AccountNo' => $data['account_number'],
+           'ExtraData' => [
+                'bundle' => $data['account_number'],
+               
+            ],
         ];
 
         return $this->client->post('/request', $payload);
