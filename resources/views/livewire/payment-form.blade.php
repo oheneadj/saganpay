@@ -48,9 +48,9 @@
                 <div class="relative">
                     <select wire:model="formData.service_type" required
                         class="w-full appearance-none pl-4 pr-10 py-3.5 bg-gray-50 border border-gray-200 rounded-[8px] text-gray-900 transition-all focus:bg-white">
-                        <option value="ECG Prepaid">ECG Prepaid</option>
-                        <option value="ECG Postpaid">ECG Postpaid</option>
-                        <option value="Ghana Water">Ghana Water</option>
+                        <option value="ECG_Prepaid" selected>ECG Prepaid</option>
+                        <option value="ECG_Postpaid">ECG Postpaid</option>
+                        <option value="Ghana_Water">Ghana Water</option>
                     </select>
                     <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
                         <svg class="h-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

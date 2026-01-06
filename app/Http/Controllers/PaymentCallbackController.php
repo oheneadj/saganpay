@@ -17,7 +17,8 @@ class PaymentCallbackController extends Controller
         
         Log::info('Hubtel Callback Received', ['data' => $data]);
 
-        $clientReference = $data['ClientReference'] ?? null;
+        $callbackData = $data['Data'] ?? [];
+        $clientReference = $callbackData['ClientReference'] ?? ($data['ClientReference'] ?? null);
         
         if (!$clientReference) {
             return response()->json(['status' => 'error', 'message' => 'No ClientReference provided'], 400);
@@ -31,13 +32,12 @@ class PaymentCallbackController extends Controller
         }
 
         // Update transaction status based on Hubtel ResponseCode
-        // 0000 = Success, anything else = Failed in this context of final callback
         $responseCode = $data['ResponseCode'] ?? 'FAILED';
         
         if ($responseCode === '0000') {
             $transaction->update([
                 'status' => 'success',
-                'hubtel_transaction_id' => $data['TransactionId'] ?? null,
+                'hubtel_transaction_id' => $callbackData['TransactionId'] ?? ($data['TransactionId'] ?? null),
                 'response_data' => $data,
                 'completed_at' => now(),
             ]);

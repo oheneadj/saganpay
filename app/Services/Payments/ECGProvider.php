@@ -42,13 +42,12 @@ class ECGProvider implements PaymentProviderInterface
             'Channel' => $data['channel'] ?? 'mobilemoney',
             'CallbackUrl' => route('payment.callback'),
             'ClientReference' => $clientReference,
-           'ExtraData' => [
+            'Extradata' => [
                 'bundle' => $data['account_number'],
-               
             ],
         ];
 
-        return $this->client->post('/request', $payload);
+        return $this->client->post('/' . $this->serviceId, $payload);
     }
 
     /**
