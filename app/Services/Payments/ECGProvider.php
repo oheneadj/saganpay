@@ -10,7 +10,7 @@ class ECGProvider implements PaymentProviderInterface
     protected HubtelClient $client;
     
     // Hubtel ECG Service ID from documentation image
-    protected string $serviceId = 'e2cd8fbc64b74e2a865668a6d91c5c0b';
+    protected string $serviceId = 'e6d6bac062b5499cb1ece1ac3d742a84';
 
     public function __construct(HubtelClient $client)
     {
