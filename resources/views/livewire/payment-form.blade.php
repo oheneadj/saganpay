@@ -119,10 +119,10 @@
                 </div>
             </div>
 
-            <button type="submit" wire:loading.attr="disabled"
+            <button type="submit" wire:loading.attr="disabled" wire:target="submitForm"
                 class="w-full py-4 bg-sky-500 hover:bg-sky-600 active:bg-sky-700 text-white font-bold rounded-[8px] shadow-sm shadow-sky-200 transition-all transform hover:translate-y-[-2px] active:translate-y-[0px] disabled:opacity-50 disabled:cursor-not-allowed">
-                <span wire:loading.remove>Proceed Payment</span>
-                <span wire:loading>Processing...</span>
+                <span wire:loading.remove wire:target="submitForm">Proceed Payment</span>
+                <span wire:loading wire:target="submitForm">Processing...</span>
             </button>
         </form>
 
@@ -137,6 +137,7 @@
     </div>
 
     <!-- Processing State -->
+    @if($state === 'processing')
     <div x-show="state === 'processing'" wire:poll.2s="pollTransactionStatus"
         x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0 scale-95"
         x-transition:enter-end="opacity-100 scale-100"
