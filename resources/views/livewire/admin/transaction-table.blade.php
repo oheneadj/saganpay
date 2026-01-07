@@ -226,6 +226,12 @@
                             {{ $selectedTransaction->created_at->format('M d, Y @ H:i:s') }}
                         </p>
                     </div>
+                    <div class="space-y-1">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Initiated By</p>
+                        <p class="text-sm font-bold text-gray-900">
+                            {{ $selectedTransaction->user ? $selectedTransaction->user->name : 'Guest User' }}
+                        </p>
+                    </div>
                 </div>
 
                 <!-- Footer Actions -->

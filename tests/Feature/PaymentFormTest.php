@@ -234,3 +234,34 @@ it('displays default error message for unknown error codes', function () {
         ->assertSet('state', 'failed')
         ->assertSet('errorMessage', 'Payment could not be completed at this time. Please check your connection or contact your bank.');
 });
+
+it('associates transaction with logged in user', function () {
+    $user = \App\Models\User::factory()->create();
+    $this->actingAs($user);
+
+    Http::fake([
+        '*' => Http::response([
+            'ResponseCode' => '0001',
+            'Message' => 'Transaction pending.',
+            'Data' => [
+                'ClientReference' => 'SP-USER-TEST',
+                'TransactionId' => 'HUB-USER-123',
+                'Amount' => 10.0
+            ]
+        ], 200)
+    ]);
+
+    Livewire::test(PaymentForm::class)
+        ->set('formData.account_number', '12345678')
+        ->set('formData.service_type', 'ECG_Prepaid')
+        ->set('formData.amount', 10)
+        ->set('formData.customer_name', 'Auth User')
+        ->set('formData.mobile_number', '0241234567')
+        ->set('formData.email', 'auth@example.com')
+        ->call('submitForm')
+        ->call('initiatePayment');
+
+    $transaction = \App\Models\Transaction::where('email', 'auth@example.com')->first();
+    expect($transaction)->not->toBeNull();
+    expect($transaction->user_id)->toBe($user->id);
+});

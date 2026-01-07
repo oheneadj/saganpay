@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Transaction extends Model
 {
     protected $fillable = [
+        'user_id',
         'client_reference',
         'hubtel_transaction_id',
         'account_number',
@@ -25,4 +26,8 @@ class Transaction extends Model
         'completed_at' => 'datetime',
         'amount' => 'decimal:2',
     ];
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

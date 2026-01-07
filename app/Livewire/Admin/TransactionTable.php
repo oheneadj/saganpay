@@ -26,7 +26,7 @@ class TransactionTable extends Component
 
     public function viewTransaction($id)
     {
-        $this->selectedTransaction = Transaction::find($id);
+        $this->selectedTransaction = Transaction::with('user')->find($id);
         $this->showModal = true;
         $this->dispatch('open-modal', 'transaction-details');
     }

@@ -6,6 +6,7 @@ use App\Models\Transaction;
 use App\Services\Payments\HubtelProvider;
 use Livewire\Component;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class PaymentForm extends Component
 {
@@ -119,7 +120,8 @@ class PaymentForm extends Component
         }
 
         $response = $provider->pay(array_merge($this->formData, [
-            'client_reference' => $this->clientReference
+            'client_reference' => $this->clientReference,
+            'user_id' => Auth::id(),
         ]));
 
         Log::info('Hubtel Payment Initialized', [

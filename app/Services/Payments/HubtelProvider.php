@@ -48,6 +48,7 @@ class HubtelProvider implements PaymentProviderInterface
                 'mobile_number' => $data['mobile_number'],
                 'email' => $data['email'],
                 'status' => 'pending',
+                'user_id' => $data['user_id'] ?? null,
             ]
         );
 
