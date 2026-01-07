@@ -91,7 +91,7 @@
             {{ __('Log in') }}
         </button>
 
-        <div class="text-center mt-6">
+        {{-- <div class="text-center mt-6">
             <a href="{{ url('/') }}"
                 class="text-sm text-sky-600 hover:text-sky-700 font-bold flex items-center justify-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -100,6 +100,6 @@
                 </svg>
                 Back to Payment Page
             </a>
-        </div>
+        </div> --}}
     </form>
 </x-guest-layout>
