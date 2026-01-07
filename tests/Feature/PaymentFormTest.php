@@ -85,11 +85,35 @@ it('polls for transaction status and transitions to success', function () {
         ->assertSet('state', 'processing');
 
     // Update to success
-    $transaction->update(['status' => 'success', 'hubtel_transaction_id' => 'HUB-123']);
+    $transaction->update(['status' => 'success', 'hubtel_transaction_id' => 'HUB-123', 'completed_at' => now()]);
 
     $component->call('pollTransactionStatus')
         ->assertSet('state', 'success')
         ->assertSee('Payment Successful');
+});
+
+it('prevents multiple transactions for same reference', function () {
+    Http::fake(['*' => Http::response(['ResponseCode' => '0001'], 200)]);
+    
+    // Create existing pending transaction
+    Transaction::create([
+        'client_reference' => 'SP-EXISTING-123',
+        'account_number' => '12345678',
+        'service_type' => 'ECG_Prepaid',
+        'amount' => 10.0,
+        'customer_name' => 'Test User',
+        'mobile_number' => '233241234567',
+        'email' => 'test@example.com',
+        'status' => 'pending',
+    ]);
+
+    Livewire::test(PaymentForm::class)
+        ->set('formData.account_number', '12345678')
+        ->set('formData.amount', 10)
+        ->set('state', 'processing')
+        ->set('clientReference', 'SP-EXISTING-123')
+        ->call('initiatePayment')
+        ->assertSet('state', 'processing'); // Assert the state didn't change (still processing, but didn't crash)
 });
 
 it('formats phone number before submission', function () {

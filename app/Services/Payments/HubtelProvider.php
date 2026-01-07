@@ -36,17 +36,19 @@ class HubtelProvider implements PaymentProviderInterface
         $serviceId = self::SERVICES[$serviceType] ?? self::SERVICES['ECG_Prepaid'];
         $clientReference = $data['client_reference'] ?? uniqid('SP-');
 
-        // Persist the transaction attempt
-        \App\Models\Transaction::create([
-            'client_reference' => $clientReference,
-            'account_number' => $data['account_number'],
-            'service_type' => $serviceType,
-            'amount' => (float) $data['amount'],
-            'customer_name' => $data['customer_name'] ?? 'SaganPay User',
-            'mobile_number' => $data['mobile_number'],
-            'email' => $data['email'],
-            'status' => 'pending',
-        ]);
+        // Persist the transaction attempt (idempotent)
+        \App\Models\Transaction::firstOrCreate(
+            ['client_reference' => $clientReference],
+            [
+                'account_number' => $data['account_number'],
+                'service_type' => $serviceType,
+                'amount' => (float) $data['amount'],
+                'customer_name' => $data['customer_name'] ?? 'SaganPay User',
+                'mobile_number' => $data['mobile_number'],
+                'email' => $data['email'],
+                'status' => 'pending',
+            ]
+        );
 
         $payload = [
             'Destination' => $data['mobile_number'],
@@ -83,8 +85,6 @@ class HubtelProvider implements PaymentProviderInterface
      */
     public function checkStatus(string $clientReference): array
     {
-        return $this->client->get('/status', [
-            'ClientReference' => $clientReference
-        ]);
+        return $this->client->get('/transactionstatus/' . $clientReference);
     }
 }

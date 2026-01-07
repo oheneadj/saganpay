@@ -152,48 +152,44 @@
     </div>
 
     <!-- Processing State -->
-    @if($state === 'processing')
-        <div x-show="state === 'processing'" wire:init="initiatePayment" wire:poll.2s="pollTransactionStatus"
-            x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0 scale-95"
-            x-transition:enter-end="opacity-100 scale-100"
-            class="form-card w-full max-w-md p-12 text-center transition-all duration-500">
-            <div class="relative flex justify-center mb-8">
-                <!-- Outer Spinner -->
-                <div class="w-24 h-24 border-4 border-sky-100 rounded-full"></div>
-                <div
-                    class="absolute top-0 w-24 h-24 border-4 border-sky-500 rounded-full border-t-transparent animate-spinner-slow">
-                </div>
-                <!-- Secured Lock Icon -->
-                <div class="absolute inset-0 flex items-center justify-center">
-                    <svg class="w-10 h-10 text-sky-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd"
-                            d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
-                            clip-rule="evenodd" />
-                    </svg>
-                </div>
+    <div x-cloak x-show="state === 'processing'" wire:poll.2s="pollTransactionStatus"
+        class="form-card w-full max-w-md p-12 text-center transition-all duration-500">
+        <div class="relative flex justify-center mb-8">
+            <!-- Outer Spinner -->
+            <div class="w-24 h-24 border-4 border-sky-100 rounded-full"></div>
+            <div
+                class="absolute top-0 w-24 h-24 border-4 border-sky-500 rounded-full border-t-transparent animate-spinner-slow">
             </div>
-            <h2 class="text-2xl font-bold text-gray-900 mb-2">Processing Payment</h2>
-            <p class="text-gray-500 mb-6 text-sm italic">Securing your transaction with premium encryption...</p>
-            <div class="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
-                <div class="bg-sky-500 h-full transition-all duration-[3000ms] ease-linear w-0"
-                    :class="state === 'processing' ? 'w-full' : ''"></div>
-            </div>
-            <div class="mt-4 flex items-center justify-center gap-2 text-xs text-emerald-600 font-semibold">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <!-- Secured Lock Icon -->
+            <div class="absolute inset-0 flex items-center justify-center">
+                <svg class="w-10 h-10 text-sky-500" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
                         clip-rule="evenodd" />
                 </svg>
-                Secured Payment
-            </div>
-            <div class="mt-2">
-                <span class="text-sky-500 text-sm">Instant Utility Payments • Secure & Reliable</span>
             </div>
         </div>
-    @endif
+        <h2 class="text-2xl font-bold text-gray-900 mb-2">Processing Payment</h2>
+        <p class="text-gray-500 mb-6 text-sm italic">Waiting for confirmation from your network...</p>
+        <div class="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+            <div class="bg-sky-500 h-full transition-all duration-[30s] ease-linear w-0"
+                x-data x-init="setTimeout(() => $el.classList.add('w-full'), 100)"></div>
+        </div>
+        <div class="mt-4 flex items-center justify-center gap-2 text-xs text-emerald-600 font-semibold">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clip-rule="evenodd" />
+            </svg>
+            Please check your phone for the prompt
+        </div>
+        <div class="mt-2">
+            <span class="text-sky-500 text-sm">Instant Utility Payments • Secure & Reliable</span>
+        </div>
+    </div>
 
     <!-- Success State -->
-    <div x-show="state === 'success'" x-transition:enter="transition ease-out duration-500 delay-300"
+    <div x-cloak x-show="state === 'success'" x-transition:enter="transition ease-out duration-500 delay-300"
         x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
         class="form-card w-full max-sm:max-w-xs max-w-sm overflow-hidden transition-all duration-500">
         <div class="bg-white p-8 text-center border-b border-dashed border-gray-100">
@@ -237,7 +233,7 @@
     </div>
 
     <!-- Failed State -->
-    <div x-show="state === 'failed'" x-transition:enter="transition ease-out duration-500 delay-300"
+    <div x-cloak x-show="state === 'failed'" x-transition:enter="transition ease-out duration-500 delay-300"
         x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
         class="form-card w-full max-sm:max-w-xs max-w-sm overflow-hidden transition-all duration-500">
         <div class="bg-white p-8 text-center">

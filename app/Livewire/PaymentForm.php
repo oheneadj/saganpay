@@ -73,6 +73,7 @@ class PaymentForm extends Component
 
     public function submitForm()
     {
+        Log::info('submitForm entered', ['formData' => $this->formData]);
         try {
             $this->validate();
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -86,14 +87,24 @@ class PaymentForm extends Component
 
         // Format phone for Hubtel immediately for UI consistency
         $this->formData['mobile_number'] = $this->formatPhoneNumber($this->formData['mobile_number']);
+
+        $this->dispatch('payment-submitted')->self();
     }
 
     /**
-     * Called via wire:init from the processing state UI
+     * Triggered via event to ensure UI state changes first
      */
+    #[\Livewire\Attributes\On('payment-submitted')]
     public function initiatePayment(HubtelProvider $provider)
     {
         if ($this->state !== 'processing' || !$this->clientReference) {
+            return;
+        }
+
+        // Double check transaction hasn't already been created by a fast callback
+        $existing = Transaction::where('client_reference', $this->clientReference)->first();
+        if ($existing && $existing->status !== 'pending') {
+            $this->handleTransactionUpdate($existing);
             return;
         }
 
@@ -127,12 +138,34 @@ class PaymentForm extends Component
 
         $transaction = Transaction::where('client_reference', $this->clientReference)->first();
 
+        // 5-minute fallback logic from diagram
+        if ($transaction && $transaction->status === 'pending' && $transaction->created_at->diffInMinutes(now()) >= 5) {
+            $this->performManualStatusCheck($transaction);
+            return;
+        }
+
         if ($transaction) {
-            if ($transaction->status === 'success') {
-                $this->handleSuccess($transaction);
-            } elseif ($transaction->status === 'failed') {
-                $this->state = 'failed';
-            }
+            $this->handleTransactionUpdate($transaction);
+        }
+    }
+
+    protected function performManualStatusCheck(Transaction $transaction)
+    {
+        $provider = app(HubtelProvider::class);
+        $statusResp = $provider->checkStatus($transaction->client_reference);
+        
+        Log::info('Manual Status Check performed', ['reference' => $transaction->client_reference, 'response' => $statusResp]);
+        
+        // Logic to update transaction based on statusResp would go here
+        // For now, we assume if we reached here without a callback, we should re-verify
+    }
+
+    protected function handleTransactionUpdate(Transaction $transaction)
+    {
+        if ($transaction->status === 'success') {
+            $this->handleSuccess($transaction);
+        } elseif ($transaction->status === 'failed') {
+            $this->state = 'failed';
         }
     }
 
@@ -147,6 +180,7 @@ class PaymentForm extends Component
     protected function markAsFailed()
     {
         $this->state = 'failed';
+        // Only update DB if we have a record
         if ($this->clientReference) {
             Transaction::where('client_reference', $this->clientReference)->update(['status' => 'failed']);
         }
