@@ -39,7 +39,7 @@ it('transitions to processing state on valid submission', function () {
 
     Livewire::test(PaymentForm::class)
         ->set('formData.account_number', '12345678')
-        ->set('formData.service_type', 'ECG_Prepaid')
+        ->set('formData.service_type', 'GOTV')
         ->set('formData.amount', 10)
         ->set('formData.customer_name', 'Test User')
         ->set('formData.mobile_number', '0241234567')
@@ -121,13 +121,14 @@ it('formats phone number before submission', function () {
 
     Livewire::test(PaymentForm::class)
         ->set('formData.account_number', '12345678')
-        ->set('formData.service_type', 'ECG_Prepaid')
+        ->set('formData.service_type', 'GOTV')
         ->set('formData.amount', 10)
         ->set('formData.customer_name', 'Test User')
         ->set('formData.mobile_number', '0241234567') // Should be formatted to 233241234567
         ->set('formData.email', 'test@example.com')
         ->call('submitForm')
-        ->assertSet('formData.mobile_number', '233241234567');
+        ->assertSet('formData.mobile_number', '233241234567')
+        ->assertSet('formData.service_type', 'GOTV');
 });
 
 it('handles immediate failure from hubtel', function () {
@@ -147,4 +148,89 @@ it('handles immediate failure from hubtel', function () {
         ->call('submitForm')
         ->call('initiatePayment')
         ->assertSet('state', 'failed');
+});
+
+it('displays correct error message for registered account error (2001)', function () {
+    Http::fake(['*' => Http::response(['ResponseCode' => '2001'], 200)]);
+
+    Livewire::test(PaymentForm::class)
+        ->set('formData.account_number', '12345678')
+        ->set('formData.amount', 10)
+        ->set('formData.customer_name', 'Test User')
+        ->set('formData.mobile_number', '0241234567')
+        ->set('formData.email', 'test@example.com')
+        ->call('submitForm')
+        ->call('initiatePayment')
+        ->assertSet('state', 'failed')
+        ->assertSet('errorMessage', 'The account number is invalid, or the transaction session has expired.');
+});
+
+it('displays correct error message for verification error (4101)', function () {
+    Http::fake(['*' => Http::response(['ResponseCode' => '4101'], 200)]);
+
+    Livewire::test(PaymentForm::class)
+        ->set('formData.account_number', '12345678')
+        ->set('formData.amount', 10)
+        ->set('formData.customer_name', 'Test User')
+        ->set('formData.mobile_number', '0241234567')
+        ->set('formData.email', 'test@example.com')
+        ->call('submitForm')
+        ->call('initiatePayment')
+        ->assertSet('state', 'failed')
+        ->assertSet('errorMessage', 'Could not verify your account. Please ensure the meter/account number is correct.');
+});
+
+it('displays dynamic error descriptions from the transaction response data', function () {
+    $transaction = Transaction::create([
+        'client_reference' => 'SP-DYNAMIC-ERR',
+        'account_number' => '12345678',
+        'service_type' => 'ECG_Prepaid',
+        'amount' => 10.0,
+        'customer_name' => 'Test User',
+        'mobile_number' => '233241234567',
+        'email' => 'test@example.com',
+        'status' => 'pending',
+    ]);
+
+    $component = Livewire::test(PaymentForm::class)
+        ->set('state', 'processing')
+        ->set('clientReference', 'SP-DYNAMIC-ERR');
+
+    // Simulate callback update with specific description
+    $transaction->update([
+        'status' => 'failed',
+        'response_data' => [
+            'ResponseCode' => '2001',
+            'Data' => ['Description' => 'Session Does not exist or has expired']
+        ]
+    ]);
+
+    $component->call('pollTransactionStatus')
+        ->assertSet('state', 'failed')
+        ->assertSet('errorMessage', 'Session Does not exist or has expired')
+        ->assertSee('Session Does not exist or has expired');
+});
+
+it('resets client reference on try again', function () {
+    Livewire::test(PaymentForm::class)
+        ->set('clientReference', 'SP-OLD-REF')
+        ->set('state', 'failed')
+        ->call('tryAgain')
+        ->assertSet('state', 'form')
+        ->assertSet('clientReference', '');
+});
+
+it('displays default error message for unknown error codes', function () {
+    Http::fake(['*' => Http::response(['ResponseCode' => '9999'], 200)]);
+
+    Livewire::test(PaymentForm::class)
+        ->set('formData.account_number', '12345678')
+        ->set('formData.amount', 10)
+        ->set('formData.customer_name', 'Test User')
+        ->set('formData.mobile_number', '0241234567')
+        ->set('formData.email', 'test@example.com')
+        ->call('submitForm')
+        ->call('initiatePayment')
+        ->assertSet('state', 'failed')
+        ->assertSet('errorMessage', 'Payment could not be completed at this time. Please check your connection or contact your bank.');
 });

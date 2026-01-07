@@ -1,10 +1,10 @@
 <div x-data="{ 
     state: $wire.entangle('state'),
-    formData: $wire.entangle('formData'),
     transactionId: $wire.entangle('transactionId'),
     paymentDate: $wire.entangle('paymentDate'),
     paymentTime: $wire.entangle('paymentTime'),
-    clientReference: $wire.entangle('clientReference')
+    clientReference: $wire.entangle('clientReference'),
+    errorMessage: $wire.entangle('errorMessage')
 }" x-init="
     window.addEventListener('focus-error', event => {
         const field = event.detail.field;
@@ -39,7 +39,8 @@
                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <span class="text-gray-400 font-bold text-lg">#</span>
                     </div>
-                    <input type="text" id="formData_account_number" wire:model="formData.account_number" required
+                    <input type="text" id="formData_account_number" wire:model="formData.account_number" 
+                        wire:key="field-account-number" required
                         placeholder="Enter your meter/account number"
                         class="w-full pl-10 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[8px] text-gray-900 placeholder-gray-400 transition-all focus:bg-white">
                 </div>
@@ -56,12 +57,14 @@
                     Service Type
                 </label>
                 <div class="relative">
-                    <select id="formData_service_type" wire:model="formData.service_type" required
+                    <select id="formData_service_type" wire:model="formData.service_type" 
+                        wire:key="field-service-type" required
                         class="w-full appearance-none pl-4 pr-10 py-3.5 bg-gray-50 border border-gray-200 rounded-[8px] text-gray-900 transition-all focus:bg-white">
                         <option value="ECG_Prepaid" selected>ECG Prepaid</option>
                         <option value="ECG_Postpaid">ECG Postpaid</option>
                         <option value="Ghana_Water_Postpaid">Ghana Water</option>
                         <option value="DSTV">DSTV Subscription</option>
+                        <option value="GOTV">GoTV Payment</option>
                     </select>
                     <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
                         <svg class="h-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -85,7 +88,8 @@
                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <span class="text-gray-900 font-bold">GHS</span>
                     </div>
-                    <input type="text" id="formData_amount" wire:model="formData.amount" required placeholder="0.00"
+                    <input type="text" id="formData_amount" wire:model="formData.amount" 
+                        wire:key="field-amount" required placeholder="0.00"
                         inputmode="decimal"
                         x-on:input="$event.target.value = $event.target.value.replace(/[^0-9.]/g, '')"
                         class="w-full pl-16 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[8px] text-gray-900 placeholder-gray-400 transition-all focus:bg-white">
@@ -109,7 +113,8 @@
                                 d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
-                    <input type="text" id="formData_customer_name" wire:model="formData.customer_name" required placeholder="John Doe"
+                    <input type="text" id="formData_customer_name" wire:model="formData.customer_name" 
+                        wire:key="field-customer-name" required placeholder="John Doe"
                         class="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[8px] text-gray-900 placeholder-gray-400 transition-all focus:bg-white">
                 </div>
                 @error('formData.customer_name') <span class="text-rose-500 text-xs">{{ $message }}</span> @enderror
@@ -119,7 +124,8 @@
                 <!-- Mobile Number -->
                 <div class="space-y-2">
                     <label class="text-sm font-semibold text-gray-700">Mobile Number</label>
-                    <input type="tel" id="formData_mobile_number" wire:model="formData.mobile_number" required placeholder="0501234567"
+                    <input type="tel" id="formData_mobile_number" wire:model="formData.mobile_number" 
+                        wire:key="field-mobile-number" required placeholder="0501234567"
                         inputmode="numeric"
                         x-on:input="$event.target.value = $event.target.value.replace(/\D/g, '')"
                         class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-[8px] text-gray-900 placeholder-gray-400 transition-all focus:bg-white">
@@ -128,7 +134,8 @@
                 <!-- Email -->
                 <div class="space-y-2">
                     <label class="text-sm font-semibold text-gray-700">Email Address</label>
-                    <input type="email" id="formData_email" wire:model="formData.email" required placeholder="email@example.com"
+                    <input type="email" id="formData_email" wire:model="formData.email" 
+                        wire:key="field-email" required placeholder="email@example.com"
                         class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-[8px] text-gray-900 placeholder-gray-400 transition-all focus:bg-white">
                     @error('formData.email') <span class="text-rose-500 text-xs">{{ $message }}</span> @enderror
                 </div>
@@ -181,7 +188,7 @@
                     d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
                     clip-rule="evenodd" />
             </svg>
-            Please check your phone for the prompt
+            Please check your phone for the code or message.
         </div>
         <div class="mt-2">
             <span class="text-sky-500 text-sm">Instant Utility Payments • Secure & Reliable</span>
@@ -201,8 +208,7 @@
                 </div>
             </div>
             <h2 class="text-xl font-bold text-gray-900">Payment Successful</h2>
-            <p class="text-gray-500 text-sm mt-1">Successfully Paid GHS <span
-                    x-text="Number(formData.amount).toFixed(2)"></span></p>
+            <p class="text-gray-500 text-sm mt-1">Successfully Paid GHS <span>{{ number_format((float)($formData['amount'] ?? 0), 2) }}</span></p>
         </div>
 
         <div class="px-8 pb-8 space-y-6 mt-6">
@@ -246,15 +252,12 @@
                 </div>
             </div>
             <h2 class="text-xl font-bold text-gray-900">Payment Failed</h2>
-            <p class="text-gray-500 text-sm mt-1">Unable to process your payment of GHS <span
-                    x-text="Number(formData.amount).toFixed(2) || '0.00'"></span></p>
+            <p class="text-gray-500 text-sm mt-1">Unable to process your payment of GHS <span>{{ number_format((float)($formData['amount'] ?? 0), 2) }}</span></p>
         </div>
 
         <div class="px-8 pb-8 space-y-6">
             <div class="bg-rose-50 p-4 rounded-[8px]">
-                <p class="text-rose-600 text-sm font-medium text-center">
-                    Wait for some time and check your connection or contact your bank if the issue persists.
-                </p>
+                <p class="text-rose-600 text-sm font-medium text-center" x-text="errorMessage">{{ $errorMessage }}</p>
             </div>
 
             <button wire:click="tryAgain"

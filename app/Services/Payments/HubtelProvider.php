@@ -20,6 +20,7 @@ class HubtelProvider implements PaymentProviderInterface
         'ECG_Postpaid' => 'e6d6bac062b5499cb1ece1ac3d742a84', // Shared ID for now
         'Ghana_Water_Postpaid' => '6c1e8a82d2e84feeb8bfd6be2790d71d',
         'DSTV' => '297a96656b5846ad8b00d5d41b256ea7',
+        'GOTV' => 'e6ceac7f3880435cb30b048e9617eb41',
     ];
 
     public function __construct(HubtelClient $client)

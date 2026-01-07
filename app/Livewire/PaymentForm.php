@@ -23,12 +23,22 @@ class PaymentForm extends Component
     public string $paymentDate = '';
     public string $paymentTime = '';
     public string $clientReference = '';
+    public string $errorMessage = 'An unexpected error occurred. Please try again later.';
+
+    protected array $errorMessages = [
+        '2000' => 'Transaction failed. Please try again.',
+        '2001' => 'The account number is invalid, or the transaction session has expired.',
+        '4000' => 'A system error occurred. Please verify your details and try again.',
+        '4010' => 'Information provided is incomplete or invalid. Please check and try again.',
+        '4101' => 'Could not verify your account. Please ensure the meter/account number is correct.',
+        'default' => 'Payment could not be completed at this time. Please check your connection or contact your bank.'
+    ];
 
     protected function rules(): array
     {
         return [
             'formData.account_number' => 'required|string',
-            'formData.service_type' => 'required|string|in:ECG_Prepaid,ECG_Postpaid,Ghana_Water_Postpaid,Ghana_Water,DSTV',
+            'formData.service_type' => 'required|string|in:ECG_Prepaid,ECG_Postpaid,Ghana_Water_Postpaid,Ghana_Water,DSTV,GOTV',
             'formData.amount' => 'required|numeric|min:1',
             'formData.customer_name' => 'required|string',
             'formData.mobile_number' => ['required', 'string', 'regex:/^(0\d{9}|233\d{9}|\d{9})$/'],
@@ -122,6 +132,9 @@ class PaymentForm extends Component
             if ($response['ResponseCode'] === '0001' || $response['ResponseCode'] === '0000') {
                 return;
             }
+            // Use specific message if available, otherwise use code mapping
+            $this->markAsFailed($response['ResponseCode'], $response['Message'] ?? null);
+            return;
         }
 
         $this->markAsFailed();
@@ -165,7 +178,11 @@ class PaymentForm extends Component
         if ($transaction->status === 'success') {
             $this->handleSuccess($transaction);
         } elseif ($transaction->status === 'failed') {
-            $this->state = 'failed';
+            // Extract code and description from callback data if available
+            $code = $transaction->response_data['ResponseCode'] ?? null;
+            $description = $transaction->response_data['Data']['Description'] ?? ($transaction->response_data['Message'] ?? null);
+            
+            $this->markAsFailed($code, $description);
         }
     }
 
@@ -177,9 +194,16 @@ class PaymentForm extends Component
         $this->state = 'success';
     }
 
-    protected function markAsFailed()
+    protected function markAsFailed(?string $code = null, ?string $customMessage = null)
     {
         $this->state = 'failed';
+        
+        if ($customMessage) {
+            $this->errorMessage = $customMessage;
+        } else {
+            $this->errorMessage = $this->errorMessages[$code] ?? $this->errorMessages['default'];
+        }
+
         // Only update DB if we have a record
         if ($this->clientReference) {
             Transaction::where('client_reference', $this->clientReference)->update(['status' => 'failed']);
@@ -195,6 +219,7 @@ class PaymentForm extends Component
     public function tryAgain()
     {
         $this->state = 'form';
+        $this->clientReference = '';
     }
 
     public function render()
