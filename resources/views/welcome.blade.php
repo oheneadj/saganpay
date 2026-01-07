@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -43,38 +44,69 @@
             background-attachment: fixed;
             min-height: 100vh;
         }
+
         .glass-overlay {
             background: rgba(0, 0, 0, 0.4);
             backdrop-filter: blur(4px);
         }
+
         .form-card {
             background: white;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             border-radius: 8px;
         }
-        input, select, button {
+
+        input,
+        select,
+        button {
             border-radius: 8px !important;
         }
+
         input:focus {
             outline: none;
             border-color: #0ea5e9;
             box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
         }
+
         /* Custom spinner animation */
         @keyframes spinner-slow {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
         }
+
         .animate-spinner-slow {
             animation: spinner-slow 2s linear infinite;
         }
     </style>
     @livewireStyles
 </head>
+
 <body class="antialiased">
+    @if (Route::has('login'))
+        <div class="fixed top-0 right-0 p-6 text-right z-50">
+            @auth
+                <a href="{{ url('/dashboard') }}"
+                    class="inline-flex items-center px-6 py-2.5 bg-sky-500 hover:bg-sky-600 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-sky-500/25">
+                    Dashboard
+                </a>
+            @else
+                <a href="{{ route('login') }}"
+                    class="inline-flex items-center px-6 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white text-sm font-bold rounded-lg transition-all">
+                    Login
+                </a>
+            @endauth
+        </div>
+    @endif
+
     <div class="glass-overlay min-h-screen w-full flex items-center justify-center p-4 lg:p-8">
         @livewire('payment-form')
     </div>
     @livewireScripts
 </body>
+
 </html>

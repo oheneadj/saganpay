@@ -13,11 +13,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        User::updateOrCreate(
+            ['email' => 'admin@saganpay.com'],
+            [
+                'name' => 'SaganPay Admin',
+                'password' => bcrypt('password'), // You should change this after first login
+            ]
+        );
     }
 }

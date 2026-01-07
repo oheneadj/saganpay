@@ -1,10 +1,10 @@
 <div x-data="{ 
-    state: @entangle('state'),
-    formData: @entangle('formData'),
-    transactionId: @entangle('transactionId'),
-    paymentDate: @entangle('paymentDate'),
-    paymentTime: @entangle('paymentTime'),
-    clientReference: @entangle('clientReference')
+    state: $wire.entangle('state'),
+    formData: $wire.entangle('formData'),
+    transactionId: $wire.entangle('transactionId'),
+    paymentDate: $wire.entangle('paymentDate'),
+    paymentTime: $wire.entangle('paymentTime'),
+    clientReference: $wire.entangle('clientReference')
 }">
     <!-- Payment Form State -->
     <div x-show="state === 'form'" x-transition:enter="transition ease-out duration-500"
@@ -197,7 +197,7 @@
         <div class="px-8 pb-8 space-y-6 mt-6">
             <div class="space-y-4">
                 <div class="flex justify-between items-center text-sm">
-                    <span class="text-gray-500 font-medium">Transaction ID</span>
+                    <span class="text-gray-500 font-medium">Trans. ID</span>
                     <span class="text-gray-900 font-semibold" x-text="transactionId"></span>
                 </div>
                 <div class="flex justify-between items-center text-sm">
