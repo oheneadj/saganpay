@@ -61,6 +61,7 @@
                         <option value="ECG_Prepaid" selected>ECG Prepaid</option>
                         <option value="ECG_Postpaid">ECG Postpaid</option>
                         <option value="Ghana_Water_Postpaid">Ghana Water</option>
+                        <option value="DSTV">DSTV Subscription</option>
                     </select>
                     <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
                         <svg class="h-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -152,7 +153,7 @@
 
     <!-- Processing State -->
     @if($state === 'processing')
-        <div x-show="state === 'processing'" wire:poll.2s="pollTransactionStatus"
+        <div x-show="state === 'processing'" wire:init="initiatePayment" wire:poll.2s="pollTransactionStatus"
             x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0 scale-95"
             x-transition:enter-end="opacity-100 scale-100"
             class="form-card w-full max-w-md p-12 text-center transition-all duration-500">

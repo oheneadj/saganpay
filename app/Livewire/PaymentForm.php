@@ -28,7 +28,7 @@ class PaymentForm extends Component
     {
         return [
             'formData.account_number' => 'required|string',
-            'formData.service_type' => 'required|string|in:ECG_Prepaid,ECG_Postpaid,Ghana_Water_Postpaid,Ghana_Water',
+            'formData.service_type' => 'required|string|in:ECG_Prepaid,ECG_Postpaid,Ghana_Water_Postpaid,Ghana_Water,DSTV',
             'formData.amount' => 'required|numeric|min:1',
             'formData.customer_name' => 'required|string',
             'formData.mobile_number' => ['required', 'string', 'regex:/^(0\d{9}|233\d{9}|\d{9})$/'],
@@ -71,7 +71,7 @@ class PaymentForm extends Component
         return $cleanPhone; // Fallback to clean phone if format is unknown (validation should catch this though)
     }
 
-    public function submitForm(HubtelProvider $provider)
+    public function submitForm()
     {
         try {
             $this->validate();
@@ -84,9 +84,18 @@ class PaymentForm extends Component
         $this->state = 'processing';
         $this->clientReference = uniqid('SP-');
 
-        // Format phone for Hubtel
-        $originalPhone = $this->formData['mobile_number'];
-        $this->formData['mobile_number'] = $this->formatPhoneNumber($originalPhone);
+        // Format phone for Hubtel immediately for UI consistency
+        $this->formData['mobile_number'] = $this->formatPhoneNumber($this->formData['mobile_number']);
+    }
+
+    /**
+     * Called via wire:init from the processing state UI
+     */
+    public function initiatePayment(HubtelProvider $provider)
+    {
+        if ($this->state !== 'processing' || !$this->clientReference) {
+            return;
+        }
 
         $response = $provider->pay(array_merge($this->formData, [
             'client_reference' => $this->clientReference
@@ -94,20 +103,16 @@ class PaymentForm extends Component
 
         Log::info('Hubtel Payment Initialized', [
             'reference' => $this->clientReference, 
-            'original_phone' => $originalPhone,
             'formatted_phone' => $this->formData['mobile_number'],
             'response' => $response
         ]);
 
         if (isset($response['ResponseCode'])) {
             if ($response['ResponseCode'] === '0001' || $response['ResponseCode'] === '0000') {
-                // Initial success or pending.
-                // We will poll the DB for the final status updated by the callback.
                 return;
             }
         }
 
-        // Immediate failure if no success/pending code
         $this->markAsFailed();
     }
 
