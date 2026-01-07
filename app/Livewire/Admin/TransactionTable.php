@@ -15,11 +15,13 @@ class TransactionTable extends Component
     public $service = '';
     public $selectedTransaction = null;
     public $showModal = false;
+    public $perPage = 10;
 
     protected $queryString = [
         'search' => ['except' => ''],
         'status' => ['except' => ''],
         'service' => ['except' => ''],
+        'perPage' => ['except' => 10],
     ];
 
     public function viewTransaction($id)
@@ -41,6 +43,11 @@ class TransactionTable extends Component
         $this->resetPage();
     }
 
+    public function updatingPerPage()
+    {
+        $this->resetPage();
+    }
+
     public function render()
     {
         $transactions = Transaction::query()
@@ -58,7 +65,7 @@ class TransactionTable extends Component
                 $query->where('service_type', $this->service);
             })
             ->orderBy('created_at', 'desc')
-            ->paginate(10);
+            ->paginate($this->perPage);
 
         return view('livewire.admin.transaction-table', [
             'transactions' => $transactions,

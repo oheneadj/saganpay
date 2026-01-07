@@ -4,13 +4,22 @@ namespace App\Services\Payments;
 
 use App\Contracts\PaymentProviderInterface;
 use App\Services\Hubtel\HubtelClient;
+use Illuminate\Support\Facades\Log;
 
-class ECGProvider implements PaymentProviderInterface
+class HubtelProvider implements PaymentProviderInterface
 {
     protected HubtelClient $client;
     
-    // Hubtel ECG Service ID from documentation image
-    protected string $serviceId = 'e6d6bac062b5499cb1ece1ac3d742a84';
+    /**
+     * Service Mapping
+     * Key: Service Type (used in SaganPay)
+     * Value: Hubtel Service ID (from documentation)
+     */
+    protected const SERVICES = [
+        'ECG_Prepaid' => 'e6d6bac062b5499cb1ece1ac3d742a84',
+        'ECG_Postpaid' => 'e6d6bac062b5499cb1ece1ac3d742a84', // Shared ID for now
+        'Ghana_Water_Postpaid' => '6c1e8a82d2e84feeb8bfd6be2790d71d',
+    ];
 
     public function __construct(HubtelClient $client)
     {
@@ -22,13 +31,15 @@ class ECGProvider implements PaymentProviderInterface
      */
     public function pay(array $data): array
     {
+        $serviceType = $data['service_type'] ?? 'ECG_Prepaid';
+        $serviceId = self::SERVICES[$serviceType] ?? self::SERVICES['ECG_Prepaid'];
         $clientReference = $data['client_reference'] ?? uniqid('SP-');
 
         // Persist the transaction attempt
         \App\Models\Transaction::create([
             'client_reference' => $clientReference,
             'account_number' => $data['account_number'],
-            'service_type' => $data['service_type'] ?? 'ECG Prepaid',
+            'service_type' => $serviceType,
             'amount' => (float) $data['amount'],
             'customer_name' => $data['customer_name'] ?? 'SaganPay User',
             'mobile_number' => $data['mobile_number'],
@@ -42,12 +53,28 @@ class ECGProvider implements PaymentProviderInterface
             'Channel' => $data['channel'] ?? 'mobilemoney',
             'CallbackUrl' => route('payment.callback'),
             'ClientReference' => $clientReference,
-            'Extradata' => [
-                'bundle' => $data['account_number'],
-            ],
+            'Extradata' => $this->getExtraData($serviceType, $data),
         ];
 
-        return $this->client->post('/' . $this->serviceId, $payload);
+        return $this->client->post('/' . $serviceId, $payload);
+    }
+
+    /**
+     * Prepare service-specific Extradata
+     */
+    protected function getExtraData(string $serviceType, array $data): array
+    {
+        $extraData = [
+            'bundle' => $data['account_number'],
+        ];
+
+        // Specific requirements for Ghana Water
+        if ($serviceType === 'Ghana_Water_Postpaid') {
+            $extraData['Email'] = $data['email'];
+            $extraData['SessionId'] = uniqid(); // Typically generated from a meter query, using placeholder.
+        }
+
+        return $extraData;
     }
 
     /**

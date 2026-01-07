@@ -30,6 +30,14 @@
                 <option value="failed">Failed</option>
                 <option value="pending">Pending</option>
             </select>
+
+            <select wire:model.live="perPage"
+                class="block w-full md:w-24 py-2 pl-3 pr-10 border border-gray-200 rounded-lg bg-gray-50 text-sm focus:bg-white focus:ring-sky-500 transition-all">
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+            </select>
         </div>
     </div>
 
@@ -124,7 +132,7 @@
         </div>
 
         @if($transactions->hasPages())
-            <div class="px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+            <div class="px-6 py-4 border-t border-gray-100 bg-gray-50/50 pagination-container">
                 {{ $transactions->links() }}
             </div>
         @endif
@@ -261,6 +269,26 @@
     </x-modal>
 
     <style>
+        .pagination-container nav>div:first-child {
+            display: none !important;
+        }
+
+        .pagination-container nav span[aria-current="page"]>span {
+            background-color: #0ea5e9 !important;
+            border-color: #0ea5e9 !important;
+            color: white !important;
+        }
+
+        .pagination-container nav a {
+            transition: all 0.2s;
+        }
+
+        .pagination-container nav a:hover {
+            background-color: #f0f9ff !important;
+            color: #0ea5e9 !important;
+            border-color: #bae6fd !important;
+        }
+
         @media print {
             body * {
                 visibility: hidden;

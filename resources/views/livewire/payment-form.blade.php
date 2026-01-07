@@ -5,7 +5,17 @@
     paymentDate: $wire.entangle('paymentDate'),
     paymentTime: $wire.entangle('paymentTime'),
     clientReference: $wire.entangle('clientReference')
-}">
+}" x-init="
+    window.addEventListener('focus-error', event => {
+        const field = event.detail.field;
+        const id = field.replace(/\./g, '_');
+        const element = document.getElementById(id);
+        if (element) {
+            element.focus();
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    });
+">
     <!-- Payment Form State -->
     <div x-show="state === 'form'" x-transition:enter="transition ease-out duration-500"
         x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
@@ -29,7 +39,7 @@
                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <span class="text-gray-400 font-bold text-lg">#</span>
                     </div>
-                    <input type="text" wire:model="formData.account_number" required
+                    <input type="text" id="formData_account_number" wire:model="formData.account_number" required
                         placeholder="Enter your meter/account number"
                         class="w-full pl-10 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[8px] text-gray-900 placeholder-gray-400 transition-all focus:bg-white">
                 </div>
@@ -46,11 +56,11 @@
                     Service Type
                 </label>
                 <div class="relative">
-                    <select wire:model="formData.service_type" required
+                    <select id="formData_service_type" wire:model="formData.service_type" required
                         class="w-full appearance-none pl-4 pr-10 py-3.5 bg-gray-50 border border-gray-200 rounded-[8px] text-gray-900 transition-all focus:bg-white">
                         <option value="ECG_Prepaid" selected>ECG Prepaid</option>
                         <option value="ECG_Postpaid">ECG Postpaid</option>
-                        <option value="Ghana_Water">Ghana Water</option>
+                        <option value="Ghana_Water_Postpaid">Ghana Water</option>
                     </select>
                     <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
                         <svg class="h-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -74,7 +84,9 @@
                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <span class="text-gray-900 font-bold">GHS</span>
                     </div>
-                    <input type="number" wire:model="formData.amount" required step="0.01" placeholder="0.00"
+                    <input type="text" id="formData_amount" wire:model="formData.amount" required placeholder="0.00"
+                        inputmode="decimal"
+                        x-on:input="$event.target.value = $event.target.value.replace(/[^0-9.]/g, '')"
                         class="w-full pl-16 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[8px] text-gray-900 placeholder-gray-400 transition-all focus:bg-white">
                 </div>
                 @error('formData.amount') <span class="text-rose-500 text-xs">{{ $message }}</span> @enderror
@@ -96,7 +108,7 @@
                                 d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
-                    <input type="text" wire:model="formData.customer_name" required placeholder="John Doe"
+                    <input type="text" id="formData_customer_name" wire:model="formData.customer_name" required placeholder="John Doe"
                         class="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[8px] text-gray-900 placeholder-gray-400 transition-all focus:bg-white">
                 </div>
                 @error('formData.customer_name') <span class="text-rose-500 text-xs">{{ $message }}</span> @enderror
@@ -106,14 +118,16 @@
                 <!-- Mobile Number -->
                 <div class="space-y-2">
                     <label class="text-sm font-semibold text-gray-700">Mobile Number</label>
-                    <input type="tel" wire:model="formData.mobile_number" required placeholder="0501234567"
+                    <input type="tel" id="formData_mobile_number" wire:model="formData.mobile_number" required placeholder="0501234567"
+                        inputmode="numeric"
+                        x-on:input="$event.target.value = $event.target.value.replace(/\D/g, '')"
                         class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-[8px] text-gray-900 placeholder-gray-400 transition-all focus:bg-white">
                     @error('formData.mobile_number') <span class="text-rose-500 text-xs">{{ $message }}</span> @enderror
                 </div>
                 <!-- Email -->
                 <div class="space-y-2">
                     <label class="text-sm font-semibold text-gray-700">Email Address</label>
-                    <input type="email" wire:model="formData.email" required placeholder="email@example.com"
+                    <input type="email" id="formData_email" wire:model="formData.email" required placeholder="email@example.com"
                         class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-[8px] text-gray-900 placeholder-gray-400 transition-all focus:bg-white">
                     @error('formData.email') <span class="text-rose-500 text-xs">{{ $message }}</span> @enderror
                 </div>

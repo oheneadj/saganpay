@@ -1,11 +1,14 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PaymentCallbackController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
-});
+})->middleware(['auth', 'verified']);
+
+Route::post('/payment/callback', PaymentCallbackController::class)->name('payment.callback');
 
 Route::get('/dashboard', function () {
     return view('dashboard');
