@@ -20,7 +20,9 @@
                 <option value="">All Services</option>
                 <option value="ECG_Prepaid">ECG Prepaid</option>
                 <option value="ECG_Postpaid">ECG Postpaid</option>
-                <option value="Ghana_Water">Ghana Water</option>
+                <option value="Ghana_Water_Postpaid">Ghana Water</option>
+                <option value="DSTV">DSTV Subscription</option>
+                <option value="GOTV">GoTV Payment</option>
             </select>
 
             <select wire:model.live="status"
@@ -31,13 +33,6 @@
                 <option value="pending">Pending</option>
             </select>
 
-            <select wire:model.live="perPage"
-                class="block w-full md:w-24 py-2 pl-3 pr-10 border border-gray-200 rounded-lg bg-gray-50 text-sm focus:bg-white focus:ring-sky-500 transition-all">
-                <option value="10">10</option>
-                <option value="25">25</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-            </select>
         </div>
     </div>
 
@@ -131,11 +126,37 @@
             </table>
         </div>
 
-        @if($transactions->hasPages())
-            <div class="px-6 py-4 border-t border-gray-100 bg-gray-50/50 pagination-container">
-                {{ $transactions->links() }}
+        <div class="px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="text-sm text-gray-500 font-medium">
+                    Showing <span class="font-bold text-gray-900">{{ $transactions->firstItem() ?? 0 }}</span> 
+                    to <span class="font-bold text-gray-900">{{ $transactions->lastItem() ?? 0 }}</span> 
+                    of <span class="font-bold text-gray-900">{{ $transactions->total() }}</span> results
+                    <span class="ml-2 text-gray-400">|</span>
+                    <span class="ml-2">Page <span class="font-bold text-gray-900">{{ $transactions->currentPage() }}</span> 
+                    of <span class="font-bold text-gray-900">{{ $transactions->lastPage() }}</span></span>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">Per Page</label>
+                        <select wire:model.live="perPage"
+                            class="block w-20 py-1.5 pl-3 pr-8 border border-gray-200 rounded-lg bg-white text-xs font-bold text-gray-700 focus:ring-sky-500 transition-all">
+                            <option value="10">10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+
+                    @if($transactions->hasPages())
+                        <div class="pagination-container p-4">
+                            {{ $transactions->links() }}
+                        </div>
+                    @endif
+                </div>
             </div>
-        @endif
+        </div>
     </div>
 
     <!-- Transaction Details Modal -->
