@@ -32,7 +32,7 @@ class PaymentForm extends Component
         '4000' => 'A system error occurred. Please verify your details and try again.',
         '4010' => 'Information provided is incomplete or invalid. Please check and try again.',
         '4101' => 'Could not verify your account. Please ensure the meter/account number is correct.',
-        'default' => 'Payment could not be completed at this time. Please check your connection or contact your bank.'
+        'default' => 'Payment could not be completed at this time. Please check your connection or contact your system administrator.'
     ];
 
     protected function rules(): array

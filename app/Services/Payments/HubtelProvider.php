@@ -34,7 +34,13 @@ class HubtelProvider implements PaymentProviderInterface
     public function pay(array $data): array
     {
         $serviceType = $data['service_type'] ?? 'ECG_Prepaid';
-        $serviceId = self::SERVICES[$serviceType] ?? self::SERVICES['ECG_Prepaid'];
+        // Normalize service type for mapping
+        $normalizedService = match($serviceType) {
+            'Ghana_Water' => 'Ghana_Water_Postpaid',
+            default => $serviceType
+        };
+        
+        $serviceId = self::SERVICES[$normalizedService] ?? self::SERVICES['ECG_Prepaid'];
         $clientReference = $data['client_reference'] ?? uniqid('SP-');
 
         // Persist the transaction attempt (idempotent)
@@ -52,34 +58,55 @@ class HubtelProvider implements PaymentProviderInterface
             ]
         );
 
-        $payload = [
-            'Destination' => $data['mobile_number'],
-            'Amount' => (float) $data['amount'],
-            'Channel' => $data['channel'] ?? 'mobilemoney',
-            'CallbackUrl' => route('payment.callback'),
-            'ClientReference' => $clientReference,
-            'Extradata' => $this->getExtraData($serviceType, $data),
-        ];
+        // Build Payload based on normalized service type
+        $payload = match ($normalizedService) {
+            'Ghana_Water_Postpaid' => $this->buildWaterPayload($data, $clientReference),
+            'DSTV', 'GOTV' => $this->buildTVPayload($data, $clientReference),
+            default => $this->buildECGPayload($data, $clientReference), // Default to ECG logic
+        };
 
         return $this->client->post('/' . $serviceId, $payload);
     }
 
-    /**
-     * Prepare service-specific Extradata
-     */
-    protected function getExtraData(string $serviceType, array $data): array
+    private function buildWaterPayload(array $data, string $clientReference): array
     {
-        $extraData = [
-            'bundle' => $data['account_number'],
+        return [
+            'Destination' => $data['account_number'], // Meter Number
+            'Amount' => (float) $data['amount'],
+            'CallbackUrl' => route('payment.callback'),
+            'ClientReference' => $clientReference,
+            'Extradata' => [
+                'bundle' => $data['account_number'],
+                'Email' => $data['email'],
+                'SessionId' => $clientReference, // Using ClientReference as unique SessionID
+            ],
         ];
+    }
 
-        // Specific requirements for Ghana Water
-        if ($serviceType === 'Ghana_Water_Postpaid') {
-            $extraData['Email'] = $data['email'];
-            $extraData['SessionId'] = uniqid(); // Typically generated from a meter query, using placeholder.
-        }
+    private function buildECGPayload(array $data, string $clientReference): array
+    {
+        return [
+            'Destination' => $data['mobile_number'], // Mobile Number linked to meter
+            'Amount' => (float) $data['amount'],
+            'CallbackUrl' => route('payment.callback'),
+            'ClientReference' => $clientReference,
+            'Extradata' => [
+                'bundle' => $data['account_number'], // Meter Number goes here
+            ],
+        ];
+    }
 
-        return $extraData;
+    private function buildTVPayload(array $data, string $clientReference): array
+    {
+        return [
+            'Destination' => $data['account_number'], // Account Number
+            'Amount' => (float) $data['amount'],
+            'CallbackUrl' => route('payment.callback'),
+            'ClientReference' => $clientReference,
+            // TV services typically don't require complex Extradata like ECG/Water in this context,
+            // but we can ensure it's handled if needed. Based on prompt, only Extradata mentioned for ECG/Water.
+            // However, looking at the TV example in the prompt, there is NO Extradata field.
+        ];
     }
 
     /**
@@ -87,6 +114,6 @@ class HubtelProvider implements PaymentProviderInterface
      */
     public function checkStatus(string $clientReference): array
     {
-        return $this->client->get('/transactionstatus/' . $clientReference);
+        return $this->client->checkTransactionStatus($clientReference);
     }
 }

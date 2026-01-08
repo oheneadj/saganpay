@@ -232,7 +232,7 @@ it('displays default error message for unknown error codes', function () {
         ->call('submitForm')
         ->call('initiatePayment')
         ->assertSet('state', 'failed')
-        ->assertSet('errorMessage', 'Payment could not be completed at this time. Please check your connection or contact your bank.');
+        ->assertSet('errorMessage', 'Payment could not be completed at this time. Please check your connection or contact your system administrator.');
 });
 
 it('associates transaction with logged in user', function () {
@@ -264,4 +264,22 @@ it('associates transaction with logged in user', function () {
     $transaction = \App\Models\Transaction::where('email', 'auth@example.com')->first();
     expect($transaction)->not->toBeNull();
     expect($transaction->user_id)->toBe($user->id);
+});
+
+it('sends account number as destination in hubtel payload', function () {
+    Http::fake(['*' => Http::response(['ResponseCode' => '0001', 'Data' => ['TransactionId' => '123']], 200)]);
+
+    Livewire::test(PaymentForm::class)
+        ->set('formData.account_number', 'GW-TEST-ACC') // Account Number
+        ->set('formData.service_type', 'Ghana_Water_Postpaid')
+        ->set('formData.amount', 50)
+        ->set('formData.customer_name', 'Test User')
+        ->set('formData.mobile_number', '0240000000') // Mobile Number
+        ->set('formData.email', 'test@example.com')
+        ->call('submitForm')
+        ->call('initiatePayment');
+
+    Http::assertSent(function ($request) {
+        return $request['Destination'] === 'GW-TEST-ACC';
+    });
 });

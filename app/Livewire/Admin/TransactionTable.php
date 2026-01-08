@@ -16,11 +16,17 @@ class TransactionTable extends Component
     public $selectedTransaction = null;
     public $showModal = false;
     public $perPage = 10;
+    public $dateFilter = '';
+    public $customStartDate = '';
+    public $customEndDate = '';
 
     protected $queryString = [
         'search' => ['except' => ''],
         'status' => ['except' => ''],
         'service' => ['except' => ''],
+        'dateFilter' => ['except' => ''],
+        'customStartDate' => ['except' => ''],
+        'customEndDate' => ['except' => ''],
         'perPage' => ['except' => 10],
     ];
 
@@ -48,6 +54,11 @@ class TransactionTable extends Component
         $this->resetPage();
     }
 
+    public function updatingDateFilter()
+    {
+        $this->resetPage();
+    }
+
     public function render()
     {
         $transactions = Transaction::query()
@@ -63,6 +74,20 @@ class TransactionTable extends Component
             })
             ->when($this->service, function ($query) {
                 $query->where('service_type', $this->service);
+            })
+            ->when($this->dateFilter, function ($query) {
+                if ($this->dateFilter === 'today') {
+                    $query->where('created_at', '>=', now()->startOfDay());
+                } elseif ($this->dateFilter === '7days') {
+                    $query->where('created_at', '>=', now()->subDays(7)->startOfDay());
+                } elseif ($this->dateFilter === '30days') {
+                    $query->where('created_at', '>=', now()->subDays(30)->startOfDay());
+                } elseif ($this->dateFilter === 'custom' && $this->customStartDate && $this->customEndDate) {
+                    $query->whereBetween('created_at', [
+                        \Carbon\Carbon::parse($this->customStartDate)->startOfDay(),
+                        \Carbon\Carbon::parse($this->customEndDate)->endOfDay()
+                    ]);
+                }
             })
             ->orderBy('created_at', 'desc')
             ->paginate($this->perPage);

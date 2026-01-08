@@ -53,4 +53,24 @@ class HubtelClient
             return ['ResponseCode' => 'C005', 'Message' => $e->getMessage()];
         }
     }
+    /**
+     * Check transaction status via the separate status API.
+     */
+    public function checkTransactionStatus(string $clientReference): array
+    {
+        // Status API URL: https://api-txnstatus.hubtel.com/transactions/{POS_Sales_ID}/status
+        $url = "https://api-txnstatus.hubtel.com/transactions/{$this->merchantId}/status";
+        
+        try {
+            $response = Http::withBasicAuth($this->clientId, $this->clientSecret)
+                ->get($url, [
+                    'clientReference' => $clientReference
+                ]);
+
+            return $response->json() ?? [];
+        } catch (\Exception $e) {
+            Log::error('Hubtel Status Check Error: ' . $e->getMessage(), ['url' => $url]);
+            return ['ResponseCode' => 'C005', 'Message' => $e->getMessage()];
+        }
+    }
 }

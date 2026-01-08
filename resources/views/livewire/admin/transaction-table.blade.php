@@ -33,6 +33,24 @@
                 <option value="pending">Pending</option>
             </select>
 
+            <select wire:model.live="dateFilter"
+                class="block w-full md:w-36 py-2 pl-3 pr-10 border border-gray-200 rounded-lg bg-gray-50 text-sm focus:bg-white focus:ring-sky-500 transition-all">
+                <option value="">All Time</option>
+                <option value="today">Today</option>
+                <option value="7days">Last 7 Days</option>
+                <option value="30days">Last 30 Days</option>
+                <option value="custom">Custom Range</option>
+            </select>
+
+            @if($dateFilter === 'custom')
+                <div class="flex gap-2">
+                    <input type="date" wire:model.live="customStartDate"
+                        class="block w-full md:w-32 py-2 px-3 border border-gray-200 rounded-lg bg-gray-50 text-sm focus:bg-white focus:ring-sky-500 transition-all">
+                    <input type="date" wire:model.live="customEndDate"
+                        class="block w-full md:w-32 py-2 px-3 border border-gray-200 rounded-lg bg-gray-50 text-sm focus:bg-white focus:ring-sky-500 transition-all">
+                </div>
+            @endif
+
         </div>
     </div>
 
