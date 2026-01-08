@@ -215,7 +215,7 @@ class PaymentForm extends Component
     public function resetForm()
     {
         $this->reset(['formData', 'state', 'transactionId', 'paymentDate', 'paymentTime', 'clientReference']);
-        $this->formData['service_type'] = 'ECG Prepaid';
+        $this->formData['service_type'] = 'ECG_Prepaid';
     }
 
     public function tryAgain()
