@@ -70,6 +70,42 @@ class HubtelProvider implements PaymentProviderInterface
 
     private function buildWaterPayload(array $data, string $clientReference): array
     {
+        // 1. Query for SessionId
+        $serviceId = self::SERVICES['Ghana_Water_Postpaid'];
+        // Use provided mobile number or fallback to a default if needed (though API arguably needs a real number)
+        $mobileNumber = $data['mobile_number'] ?? '0540000000'; 
+        
+        $queryResponse = $this->client->queryCommissionService(
+            $serviceId,
+            $data['account_number'],
+            $mobileNumber
+        );
+
+        $sessionId = null;
+        // Parse response to find sessionId
+        // Response format usually has 'Data' array with Name/Value pairs
+        if (isset($queryResponse['Data']) && is_array($queryResponse['Data'])) {
+            // Sometimes it's a direct key, sometimes a list. Based on standard Hubtel calls, likely a list of objects.
+            // Documentation implies we need to find the specific field.
+            // Let's assume the standard Name/Value structure or check for direct key if 'Display' logic holds.
+            // Adjusting based on common Hubtel patterns:
+            foreach ($queryResponse['Data'] as $item) {
+                // Check if this item is the Session ID. 
+                // The prompt mentioned: "where Display === sessionId"
+                if ((isset($item['Display']) && $item['Display'] === 'sessionId') || (isset($item['Name']) && $item['Name'] === 'sessionId')) {
+                    $sessionId = $item['Value'] ?? null;
+                    break;
+                }
+            }
+        }
+
+        if (!$sessionId) {
+            Log::warning('Hubtel: Failed to retrieve SessionId for Ghana Water', ['response' => $queryResponse]);
+            // We throw an exception here because without a SessionId, the payment IS GUARANTEED to fail.
+            // The UI should catch this or we handle it gracefully.
+            throw new \Exception('Could not validate Meter Number. Please check the number and try again.');
+        }
+
         return [
             'Destination' => $data['account_number'], // Meter Number
             'Amount' => (float) $data['amount'],
@@ -78,7 +114,7 @@ class HubtelProvider implements PaymentProviderInterface
             'Extradata' => [
                 'bundle' => $data['account_number'],
                 'Email' => $data['email'],
-                'SessionId' => $clientReference, // Using ClientReference as unique SessionID
+                'SessionId' => $sessionId,
             ],
         ];
     }

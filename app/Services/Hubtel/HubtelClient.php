@@ -73,4 +73,42 @@ class HubtelClient
             return ['ResponseCode' => 'C005', 'Message' => $e->getMessage()];
         }
     }
+
+    /**
+     * Query commission service API (e.g. for Ghana Water bill status/SessionId).
+     *
+     * @param string $serviceId
+     * @param string $destination
+     * @param string $mobile
+     * @return array
+     */
+    public function queryCommissionService(string $serviceId, string $destination, string $mobile): array
+    {
+        // This uses a different base URL: https://cs.hubtel.com/commissionservices/{merchantId}/{serviceId}
+        $url = "https://cs.hubtel.com/commissionservices/{$this->merchantId}/{$serviceId}";
+
+        try {
+            $response = Http::withBasicAuth($this->clientId, $this->clientSecret)
+                ->get($url, [
+                    'destination' => $destination,
+                    'mobile' => $mobile, // The user's phone number or the payer's phone number
+                ]);
+            
+            if ($response->successful()) {
+                return $response->json();
+            }
+
+            Log::error('Hubtel Commission Service Query Failed:', [
+                'url' => $url,
+                'status' => $response->status(),
+                'body' => $response->body()
+            ]);
+
+            return ['ResponseCode' => 'Error', 'Message' => 'Request failed with status ' . $response->status()];
+
+        } catch (\Exception $e) {
+            Log::error('Hubtel Commission Service Query Exception: ' . $e->getMessage());
+            return ['ResponseCode' => 'Exception', 'Message' => $e->getMessage()];
+        }
+    }
 }

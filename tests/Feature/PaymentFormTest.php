@@ -267,7 +267,17 @@ it('associates transaction with logged in user', function () {
 });
 
 it('sends account number as destination in hubtel payload', function () {
-    Http::fake(['*' => Http::response(['ResponseCode' => '0001', 'Data' => ['TransactionId' => '123']], 200)]);
+    Http::fake([
+        // Mock the Commission Service Query (first call)
+        'https://cs.hubtel.com/*' => Http::response([
+            'ResponseCode' => '0000', 
+            'Data' => [
+                ['Display' => 'sessionId', 'Value' => 'TEST_SESSION_ID']
+            ]
+        ], 200),
+        // Mock the Payment Request (second call)
+        '*' => Http::response(['ResponseCode' => '0001', 'Data' => ['TransactionId' => '123']], 200)
+    ]);
 
     Livewire::test(PaymentForm::class)
         ->set('formData.account_number', 'GW-TEST-ACC') // Account Number
@@ -280,6 +290,10 @@ it('sends account number as destination in hubtel payload', function () {
         ->call('initiatePayment');
 
     Http::assertSent(function ($request) {
-        return $request['Destination'] === 'GW-TEST-ACC';
+        // Skip if it's the GET query to commission service
+        if ($request->method() === 'GET') {
+            return false;
+        }
+        return isset($request['Destination']) && $request['Destination'] === 'GW-TEST-ACC';
     });
 });
