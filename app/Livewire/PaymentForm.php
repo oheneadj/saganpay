@@ -267,7 +267,7 @@ class PaymentForm extends Component
     {
         $this->reset(['formData', 'state', 'transactionId', 'paymentDate', 'paymentTime', 'clientReference', 'step', 'verifiedName', 'verificationSessionId', 'errorMessage']);
         $this->formData['service_type'] = 'ECG_Prepaid';
-        $this->step = 2; // Default to ECG which is step 2
+        $this->step = 1; // Default to ECG which is step 2
     }
 
     public function tryAgain()
