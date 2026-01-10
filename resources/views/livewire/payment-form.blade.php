@@ -5,7 +5,9 @@
     paymentTime: $wire.entangle('paymentTime'),
     clientReference: $wire.entangle('clientReference'),
     errorMessage: $wire.entangle('errorMessage'),
-    formData: $wire.entangle('formData')
+    formData: $wire.entangle('formData'),
+    step: $wire.entangle('step'),
+    verifiedName: $wire.entangle('verifiedName')
 }" x-init="
     window.addEventListener('focus-error', event => {
         const field = event.detail.field;
@@ -27,124 +29,172 @@
         </div>
 
         <form wire:submit.prevent="submitForm" class="space-y-6">
-            <!-- Meter/Account Number -->
-            <div class="space-y-2">
-                <label class="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                    <svg class="w-4 h-4 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                    Meter/Account Number
-                </label>
-                <div class="input-group relative">
-                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <span class="text-gray-400 font-bold text-lg">#</span>
+
+            <!-- Step 1: Service Selection & Validation -->
+            <div x-show="step === 1" x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0">
+
+                <!-- Service Grid -->
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Select Service</label>
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div @click="$wire.set('formData.service_type', 'ECG_Prepaid')"
+                        class="cursor-pointer border rounded-xl p-4 flex flex-col items-center justify-center gap-2 transition-all hover:border-sky-500 hover:shadow-md"
+                        :class="['ECG_Prepaid', 'ECG_Postpaid'].includes(formData.service_type) ? 'border-sky-500 bg-sky-50 ring-2 ring-sky-200' : 'border-gray-200 bg-white'">
+                        <img src="/assets/images/services/ecg.png" class="h-12 w-auto object-contain" alt="ECG">
+                        <span class="text-xs font-bold text-center text-gray-700">ECG</span>
                     </div>
-                    <input type="text" id="formData_account_number" wire:model="formData.account_number"
-                        wire:key="field-account-number" required placeholder="Enter your meter/account number"
-                        class="w-full pl-10 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[8px] text-gray-900 placeholder-gray-400 transition-all focus:bg-white">
+                    <div @click="$wire.set('formData.service_type', 'Ghana_Water_Postpaid')"
+                        class="cursor-pointer border rounded-xl p-4 flex flex-col items-center justify-center gap-2 transition-all hover:border-sky-500 hover:shadow-md"
+                        :class="formData.service_type === 'Ghana_Water_Postpaid' ? 'border-sky-500 bg-sky-50 ring-2 ring-sky-200' : 'border-gray-200 bg-white'">
+                        <img src="/assets/images/services/water.png" class="h-12 w-auto object-contain" alt="Water">
+                        <span class="text-xs font-bold text-center text-gray-700">Ghana Water</span>
+                    </div>
+                    <div @click="$wire.set('formData.service_type', 'DSTV')"
+                        class="cursor-pointer border rounded-xl p-4 flex flex-col items-center justify-center gap-2 transition-all hover:border-sky-500 hover:shadow-md"
+                        :class="formData.service_type === 'DSTV' ? 'border-sky-500 bg-sky-50 ring-2 ring-sky-200' : 'border-gray-200 bg-white'">
+                        <img src="/assets/images/services/dstv.png" class="h-12 w-auto object-contain" alt="DSTV">
+                        <span class="text-xs font-bold text-center text-gray-700">DSTV</span>
+                    </div>
+                    <div @click="$wire.set('formData.service_type', 'GOTV')"
+                        class="cursor-pointer border rounded-xl p-4 flex flex-col items-center justify-center gap-2 transition-all hover:border-sky-500 hover:shadow-md"
+                        :class="formData.service_type === 'GOTV' ? 'border-sky-500 bg-sky-50 ring-2 ring-sky-200' : 'border-gray-200 bg-white'">
+                        <img src="/assets/images/services/gotv.png" class="h-12 w-auto object-contain" alt="GoTV">
+                        <span class="text-xs font-bold text-center text-gray-700">GoTV</span>
+                    </div>
                 </div>
-                @error('formData.account_number') <span class="text-rose-500 text-xs">{{ $message }}</span> @enderror
+
+                <!-- Account Input (Only for Non-ECG in Step 1) -->
+                <div x-show="formData.service_type && !['ECG_Prepaid', 'ECG_Postpaid'].includes(formData.service_type)">
+                    <div class="space-y-2 mb-4">
+                        <label class="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                            Account Number
+                        </label>
+                        <div class="input-group relative">
+                            <input type="text" wire:model="formData.account_number" placeholder="Enter account number"
+                                class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[8px] text-gray-900 transition-all focus:bg-white">
+                        </div>
+                    </div>
+
+                    <!-- Mobile Number for Ghana Water (Required for validation) -->
+                    <div x-show="formData.service_type === 'Ghana_Water_Postpaid'" class="space-y-2 mb-4">
+                        <label class="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                            Mobile Number
+                        </label>
+                        <div class="input-group relative">
+                            <input type="tel" wire:model="formData.mobile_number" placeholder="0501234567"
+                                class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[8px] text-gray-900 transition-all focus:bg-white">
+                        </div>
+                        <p class="text-xs text-gray-500">Required to validate Ghana Water meter</p>
+                    </div>
+
+                    <!-- Error Alert -->
+                    @if($errorMessage)
+                        <div class="mb-4 bg-rose-50 border border-rose-200 rounded-lg p-4 flex items-start gap-3">
+                            <div class="flex-shrink-0">
+                                <svg class="w-5 h-5 text-rose-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-rose-800">{{ $errorMessage }}</p>
+                            </div>
+                        </div>
+                    @endif
+
+                    <button type="button" wire:click="validateAccount" wire:loading.attr="disabled"
+                        wire:target="validateAccount"
+                        class="w-full py-3.5 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-[8px] transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span wire:loading.remove wire:target="validateAccount">Validate Account</span>
+                        <span wire:loading wire:target="validateAccount">Validating...</span>
+                    </button>
+                </div>
+
+                <div x-show="!formData.service_type" class="text-center py-4 text-gray-400 text-sm">
+                    Select a service to proceed
+                </div>
             </div>
 
-            <!-- Service Type -->
-            <div class="space-y-2">
-                <label class="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                    <svg class="w-4 h-4 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                    Service Type
-                </label>
-                <div class="relative">
-                    <select id="formData_service_type" wire:model="formData.service_type" wire:key="field-service-type"
-                        required
-                        class="w-full appearance-none pl-4 pr-10 py-3.5 bg-gray-50 border border-gray-200 rounded-[8px] text-gray-900 transition-all focus:bg-white">
-                        <option value="">Select Service Type</option>
-                        <option value="ECG_Prepaid">ECG Prepaid</option>
-                        <option value="ECG_Postpaid">ECG Postpaid</option>
-                        <option value="Ghana_Water_Postpaid">Ghana Water</option>
-                        <option value="DSTV">DSTV Subscription</option>
-                        <option value="GOTV">GoTV Payment</option>
-                    </select>
-                    <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                        <svg class="h-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            <!-- Step 2: Details & Payment -->
+            <div x-show="step === 2" x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0">
+
+                <div class="flex items-center justify-between mb-6">
+                    <button type="button" @click="$wire.set('step', 1); $wire.set('formData.service_type', '')"
+                        class="text-sm text-gray-500 hover:text-gray-900 flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                        </svg>
+                        Change Service
+                    </button>
+                    <span class="text-sm font-bold text-gray-900 bg-gray-100 px-3 py-1 rounded-full"
+                        x-text="formData.service_type.replace('_Prepaid', '').replace('_Postpaid', '').replace('_', ' ')"></span>
+                </div>
+
+                <!-- Verified Name Display -->
+                <div x-show="verifiedName"
+                    class="mb-6 bg-emerald-50 border border-emerald-100 p-4 rounded-lg flex items-center gap-3">
+                    <div class="bg-emerald-100 p-2 rounded-full text-emerald-600">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                         </svg>
                     </div>
-                </div>
-                @error('formData.service_type') <span class="text-rose-500 text-xs">{{ $message }}</span> @enderror
-            </div>
-
-            <!-- Amount to Pay -->
-            <div class="space-y-2">
-                <label class="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                    <svg class="w-4 h-4 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    Amount to Pay (GHS)
-                </label>
-                <div class="input-group relative">
-                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <span class="text-gray-900 font-bold">GHS</span>
+                    <div>
+                        <p class="text-xs text-emerald-600 font-semibold uppercase tracking-wide">Verified Account</p>
+                        <p class="text-gray-900 font-bold" x-text="verifiedName"></p>
                     </div>
-                    <input type="text" id="formData_amount" wire:model="formData.amount" wire:key="field-amount"
-                        required placeholder="0.00" inputmode="decimal"
-                        x-on:input="$event.target.value = $event.target.value.replace(/[^0-9.]/g, '')"
-                        class="w-full pl-16 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[8px] text-gray-900 placeholder-gray-400 transition-all focus:bg-white">
                 </div>
-                @error('formData.amount') <span class="text-rose-500 text-xs">{{ $message }}</span> @enderror
-            </div>
 
-            <!-- Customer Name -->
-            <div class="space-y-2">
-                <label class="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                    <svg class="w-4 h-4 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    Customer Name
-                </label>
-                <div class="input-group relative">
-                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <svg class="h-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                <!-- ECG Specific: Account Number (Since skipped S1) -->
+                <div x-show="['ECG_Prepaid', 'ECG_Postpaid'].includes(formData.service_type)" class="space-y-2 mb-4">
+                    <label class="text-sm font-semibold text-gray-700">Meter Number</label>
+                    <input type="text" wire:model="formData.account_number" placeholder="Enter meter number"
+                        class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[8px] text-gray-900">
+                    @error('formData.account_number') <span class="text-rose-500 text-xs">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <!-- Amount -->
+                <div class="space-y-2 mb-4">
+                    <label class="text-sm font-semibold text-gray-700">Amount (GHS)</label>
+                    <input type="text" wire:model="formData.amount" placeholder="0.00" inputmode="decimal"
+                        class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[8px] text-gray-900">
+                    @error('formData.amount') <span class="text-rose-500 text-xs">{{ $message }}</span> @enderror
+                </div>
+
+                <!-- Customer Name (Editable if not verified or ECG) -->
+                <div x-show="!verifiedName" class="space-y-2 mb-4">
+                    <label class="text-sm font-semibold text-gray-700">Customer Name</label>
+                    <input type="text" wire:model="formData.customer_name" placeholder="John Doe"
+                        class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[8px] text-gray-900">
+                    @error('formData.customer_name') <span class="text-rose-500 text-xs">{{ $message }}</span> @enderror
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <!-- Mobile -->
+                    <div class="space-y-2">
+                        <label class="text-sm font-semibold text-gray-700">Mobile Number</label>
+                        <input type="tel" wire:model="formData.mobile_number" placeholder="050..."
+                            class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[8px] text-gray-900">
+                        @error('formData.mobile_number') <span class="text-rose-500 text-xs">{{ $message }}</span>
+                        @enderror
                     </div>
-                    <input type="text" id="formData_customer_name" wire:model="formData.customer_name"
-                        wire:key="field-customer-name" required placeholder="John Doe"
-                        class="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[8px] text-gray-900 placeholder-gray-400 transition-all focus:bg-white">
+                    <!-- Email -->
+                    <div class="space-y-2">
+                        <label class="text-sm font-semibold text-gray-700">Email</label>
+                        <input type="email" wire:model="formData.email" placeholder="email@example.com"
+                            class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[8px] text-gray-900">
+                        @error('formData.email') <span class="text-rose-500 text-xs">{{ $message }}</span> @enderror
+                    </div>
                 </div>
-                @error('formData.customer_name') <span class="text-rose-500 text-xs">{{ $message }}</span> @enderror
-            </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Mobile Number -->
-                <div class="space-y-2">
-                    <label class="text-sm font-semibold text-gray-700">Mobile Number</label>
-                    <input type="tel" id="formData_mobile_number" wire:model="formData.mobile_number"
-                        wire:key="field-mobile-number" required placeholder="0501234567" inputmode="numeric"
-                        x-on:input="$event.target.value = $event.target.value.replace(/\D/g, '')"
-                        class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-[8px] text-gray-900 placeholder-gray-400 transition-all focus:bg-white">
-                    @error('formData.mobile_number') <span class="text-rose-500 text-xs">{{ $message }}</span> @enderror
-                </div>
-                <!-- Email -->
-                <div class="space-y-2">
-                    <label class="text-sm font-semibold text-gray-700">Email Address</label>
-                    <input type="email" id="formData_email" wire:model="formData.email" wire:key="field-email" required
-                        placeholder="email@example.com"
-                        class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-[8px] text-gray-900 placeholder-gray-400 transition-all focus:bg-white">
-                    @error('formData.email') <span class="text-rose-500 text-xs">{{ $message }}</span> @enderror
-                </div>
+                <button type="submit" wire:loading.attr="disabled" wire:target="submitForm"
+                    class="w-full py-4 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-[8px] transition-all shadow-lg shadow-sky-200">
+                    <span wire:loading.remove wire:target="submitForm">Pay Now</span>
+                    <span wire:loading wire:target="submitForm">Processing...</span>
+                </button>
             </div>
-
-            <button type="submit" wire:loading.attr="disabled" wire:target="submitForm"
-                class="w-full py-4 bg-sky-500 hover:bg-sky-600 active:bg-sky-700 text-white font-bold rounded-[8px] shadow-sm shadow-sky-200 transition-all transform hover:translate-y-[-2px] active:translate-y-[0px] disabled:opacity-50 disabled:cursor-not-allowed">
-                <span wire:loading.remove wire:target="submitForm">Proceed Payment</span>
-                <span wire:loading wire:target="submitForm">Processing...</span>
-            </button>
         </form>
 
         <div class="flex items-center justify-center gap-2 text-gray-400 text-sm mt-4">
@@ -208,7 +258,8 @@
             </div>
             <h2 class="text-xl font-bold text-gray-900">Payment Successful</h2>
             <p class="text-gray-500 text-sm mt-1">Successfully Paid GHS
-                <span>{{ number_format((float) ($formData['amount'] ?? 0), 2) }}</span></p>
+                <span>{{ number_format((float) ($formData['amount'] ?? 0), 2) }}</span>
+            </p>
         </div>
 
         <div class="px-8 pb-8 space-y-6 mt-6">
@@ -253,7 +304,8 @@
             </div>
             <h2 class="text-xl font-bold text-gray-900">Payment Failed</h2>
             <p class="text-gray-500 text-sm mt-1">Unable to process your payment of GHS
-                <span>{{ number_format((float) ($formData['amount'] ?? 0), 2) }}</span></p>
+                <span>{{ number_format((float) ($formData['amount'] ?? 0), 2) }}</span>
+            </p>
         </div>
 
         <div class="px-8 pb-8 space-y-6">

@@ -82,33 +82,41 @@ class HubtelClient
      * @param string $mobile
      * @return array
      */
-    public function queryCommissionService(string $serviceId, string $destination, string $mobile): array
+    public function queryCommissionService(string $serviceId, string $destination, ?string $mobile = null): array
     {
         // This uses a different base URL: https://cs.hubtel.com/commissionservices/{merchantId}/{serviceId}
         $url = "https://cs.hubtel.com/commissionservices/{$this->merchantId}/{$serviceId}";
 
+        $query = [
+            'destination' => $destination,
+        ];
+
+        if ($mobile) {
+            $query['mobile'] = $mobile;
+        }
+
         try {
             $response = Http::withBasicAuth($this->clientId, $this->clientSecret)
-                ->get($url, [
-                    'destination' => $destination,
-                    'mobile' => $mobile, // The user's phone number or the payer's phone number
-                ]);
+                ->get($url, $query);
             
             if ($response->successful()) {
                 return $response->json();
             }
 
-            Log::error('Hubtel Commission Service Query Failed:', [
+            Log::error('Hubtel Commission Service Query Failed', [
                 'url' => $url,
                 'status' => $response->status(),
                 'body' => $response->body()
             ]);
 
-            return ['ResponseCode' => 'Error', 'Message' => 'Request failed with status ' . $response->status()];
+            // Parse error response
+            $errorData = $response->json();
+            $errorMessage = $errorData['Message'] ?? $errorData['Label'] ?? 'Unable to validate account. Please check the account number and try again.';
+            
+            throw new \Exception($errorMessage);
 
         } catch (\Exception $e) {
-            Log::error('Hubtel Commission Service Query Exception: ' . $e->getMessage());
-            return ['ResponseCode' => 'Exception', 'Message' => $e->getMessage()];
+            throw $e;
         }
     }
 }

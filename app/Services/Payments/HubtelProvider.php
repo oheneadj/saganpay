@@ -77,31 +77,34 @@ class HubtelProvider implements PaymentProviderInterface
     private function buildWaterPayload(array $data, string $clientReference): array
     {
         try {
-            // 1. Query for SessionId
-            $serviceId = self::SERVICES['Ghana_Water_Postpaid'];
-            // Use provided mobile number or fallback to a default if needed
-            $mobileNumber = $data['mobile_number'] ?? '0540000000'; 
-            
-            $queryResponse = $this->client->queryCommissionService(
-                $serviceId,
-                $data['account_number'],
-                $mobileNumber
-            );
-
-            $sessionId = null;
-            // Parse response to find sessionId
-            if (isset($queryResponse['Data']) && is_array($queryResponse['Data'])) {
-                foreach ($queryResponse['Data'] as $item) {
-                    if ((isset($item['Display']) && $item['Display'] === 'sessionId') || (isset($item['Name']) && $item['Name'] === 'sessionId')) {
-                        $sessionId = $item['Value'] ?? null;
-                        break;
-                    }
-                }
-            }
+            // 1. Check if SessionId is already provided (from validation step)
+            $sessionId = $data['session_id'] ?? null;
 
             if (!$sessionId) {
-                Log::warning('Hubtel: Failed to retrieve SessionId for Ghana Water', ['response' => $queryResponse]);
-                throw new \Exception('Could not validate Meter Number. Please check the number and try again.');
+                // Fallback: Query for SessionId if not provided
+                $serviceId = self::SERVICES['Ghana_Water_Postpaid'];
+                $mobileNumber = $data['mobile_number'] ?? '0540000000'; 
+                
+                $queryResponse = $this->client->queryCommissionService(
+                    $serviceId,
+                    $data['account_number'],
+                    $mobileNumber
+                );
+
+                // Parse response to find sessionId
+                if (isset($queryResponse['Data']) && is_array($queryResponse['Data'])) {
+                    foreach ($queryResponse['Data'] as $item) {
+                        if ((isset($item['Display']) && $item['Display'] === 'sessionId') || (isset($item['Name']) && $item['Name'] === 'sessionId')) {
+                            $sessionId = $item['Value'] ?? null;
+                            break;
+                        }
+                    }
+                }
+
+                if (!$sessionId) {
+                    Log::warning('Hubtel: Failed to retrieve SessionId for Ghana Water', ['response' => $queryResponse]);
+                    throw new \Exception('Could not validate Meter Number. Please check the number and try again.');
+                }
             }
 
             return [
@@ -145,6 +148,76 @@ class HubtelProvider implements PaymentProviderInterface
             // but we can ensure it's handled if needed. Based on prompt, only Extradata mentioned for ECG/Water.
             // However, looking at the TV example in the prompt, there is NO Extradata field.
         ];
+    }
+
+    /**
+     * Validate account details for services that support it (Water, DSTV, GoTV).
+     * Returns an array with 'verified_name' and optionally 'session_id'.
+     * Throws exception on validation failure.
+     */
+    public function validateAccount(string $serviceType, string $accountNumber, array $data = []): array
+    {
+        try {
+            // Normalize service type
+            $normalizedService = match($serviceType) {
+                'Ghana_Water' => 'Ghana_Water_Postpaid',
+                default => $serviceType
+            };
+
+            if (!isset(self::SERVICES[$normalizedService])) {
+                throw new \Exception("Service not supported for validation.");
+            }
+
+            $serviceId = self::SERVICES[$normalizedService];
+            
+            // Ghana Water requires mobile number for validation
+            // DSTV/GoTV only need account number
+            $mobile = null;
+            if ($normalizedService === 'Ghana_Water_Postpaid') {
+                // Use the mobile number from form data if provided
+                $mobile = $data['mobile_number'] ?? null;
+                if (!$mobile) {
+                    throw new \Exception('Mobile number is required to validate Ghana Water meter.');
+                }
+            }
+
+            $response = $this->client->queryCommissionService($serviceId, $accountNumber, $mobile);
+
+            if (isset($response['ResponseCode']) && $response['ResponseCode'] !== '0000') {
+                 throw new \Exception($response['Message'] ?? 'Account validation failed.');
+            }
+
+            $data = $response['Data'] ?? [];
+            if (!is_array($data)) {
+                 throw new \Exception('Invalid response from provider.');
+            }
+
+            $result = [
+                'verified_name' => null,
+                'session_id' => null
+            ];
+
+            foreach ($data as $item) {
+                $itemKey = $item['Display'] ?? $item['Name'] ?? '';
+                if ($itemKey === 'name' || $itemKey === 'Name') {
+                    $result['verified_name'] = $item['Value'] ?? null;
+                }
+                if ($itemKey === 'sessionId' || $itemKey === 'SessionId') {
+                    $result['session_id'] = $item['Value'] ?? null;
+                }
+            }
+
+            if (!$result['verified_name']) {
+                 // Fallback if name not explicitly found but success (unlikely)
+                 // Or maybe logic specific to service
+            }
+
+            return $result;
+
+        } catch (\Exception $e) {
+            Log::error('Account Validation Error: ' . $e->getMessage());
+            throw $e;
+        }
     }
 
     /**

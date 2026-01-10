@@ -24,7 +24,23 @@ class PaymentForm extends Component
     public string $paymentDate = '';
     public string $paymentTime = '';
     public string $clientReference = '';
-    public string $errorMessage = 'An unexpected error occurred. Please try again later.';
+    public string $errorMessage = '';
+
+    // Multi-step logic properties
+    public int $step = 1;
+    public string $verifiedName = '';
+    public string $verificationSessionId = '';
+
+    public function updatedFormDataServiceType($value)
+    {
+        $this->reset(['step', 'verifiedName', 'verificationSessionId', 'errorMessage']);
+        // ECG services skip validation step
+        if (in_array($value, ['ECG_Prepaid', 'ECG_Postpaid'])) {
+            $this->step = 2;
+        } else {
+            $this->step = 1;
+        }
+    }
 
     protected array $errorMessages = [
         '2000' => 'Transaction failed. Please try again.',
@@ -82,6 +98,34 @@ class PaymentForm extends Component
         return $cleanPhone; // Fallback to clean phone if format is unknown (validation should catch this though)
     }
 
+    public function validateAccount(HubtelProvider $provider)
+    {
+        $this->validate([
+            'formData.service_type' => 'required',
+            'formData.account_number' => 'required',
+        ]);
+
+        $this->errorMessage = '';
+
+        try {
+            // Pass the entire formData so provider can access mobile_number for Ghana Water
+            $result = $provider->validateAccount($this->formData['service_type'], $this->formData['account_number'], $this->formData);
+            
+            $this->verifiedName = $result['verified_name'] ?? 'Verified Account';
+            $this->verificationSessionId = $result['session_id'] ?? '';
+            
+            // Auto-fill customer name if available
+            if ($this->verifiedName) {
+                $this->formData['customer_name'] = $this->verifiedName;
+            }
+
+            $this->step = 2;
+
+        } catch (\Exception $e) {
+            $this->errorMessage = $e->getMessage();
+        }
+    }
+
     public function submitForm()
     {
         Log::info('submitForm entered', ['formData' => $this->formData]);
@@ -119,10 +163,17 @@ class PaymentForm extends Component
             return;
         }
 
-        $response = $provider->pay(array_merge($this->formData, [
+        $paymentData = array_merge($this->formData, [
             'client_reference' => $this->clientReference,
             'user_id' => Auth::id(),
-        ]));
+        ]);
+
+        // Inject session ID if available from validation
+        if ($this->verificationSessionId) {
+            $paymentData['session_id'] = $this->verificationSessionId;
+        }
+
+        $response = $provider->pay($paymentData);
 
         Log::info('Hubtel Payment Initialized', [
             'reference' => $this->clientReference, 
@@ -214,8 +265,9 @@ class PaymentForm extends Component
 
     public function resetForm()
     {
-        $this->reset(['formData', 'state', 'transactionId', 'paymentDate', 'paymentTime', 'clientReference']);
+        $this->reset(['formData', 'state', 'transactionId', 'paymentDate', 'paymentTime', 'clientReference', 'step', 'verifiedName', 'verificationSessionId', 'errorMessage']);
         $this->formData['service_type'] = 'ECG_Prepaid';
+        $this->step = 2; // Default to ECG which is step 2
     }
 
     public function tryAgain()

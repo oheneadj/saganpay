@@ -297,3 +297,48 @@ it('sends account number as destination in hubtel payload', function () {
         return isset($request['Destination']) && $request['Destination'] === 'GW-TEST-ACC';
     });
 });
+
+it('validates account and transitions to step 2 for generic services', function () {
+    // Mock Validation Response
+    Http::fake([
+        'https://cs.hubtel.com/*' => Http::response([
+            'ResponseCode' => '0000',
+            'Data' => [
+                ['Display' => 'name', 'Value' => 'Test Customer'],
+                ['Display' => 'sessionId', 'Value' => 'TEST_SESSION']
+            ]
+        ], 200)
+    ]);
+
+    Livewire::test(PaymentForm::class)
+        ->set('formData.service_type', 'Ghana_Water_Postpaid')
+        ->set('formData.account_number', 'GW-123')
+        ->call('validateAccount')
+        ->assertSet('step', 2)
+        ->assertSet('verifiedName', 'Test Customer')
+        ->assertSet('verificationSessionId', 'TEST_SESSION')
+        ->assertSet('formData.customer_name', 'Test Customer');
+});
+
+it('skips validation for ECG services', function () {
+    Livewire::test(PaymentForm::class)
+        ->set('formData.service_type', 'ECG_Prepaid')
+        ->assertSet('step', 2);
+});
+
+it('handles validation failure gracefully', function () {
+    Http::fake([
+        'https://cs.hubtel.com/*' => Http::response([
+            'ResponseCode' => '2001',
+            'Message' => 'Invalid Account'
+        ], 200)
+    ]);
+
+    Livewire::test(PaymentForm::class)
+        ->set('formData.service_type', 'DSTV')
+        ->set('formData.account_number', 'INVALID-ACC')
+        ->call('validateAccount')
+        ->assertSet('step', 1)
+        ->assertSet('verifiedName', '')
+        ->assertSet('errorMessage', 'Invalid Account');
+});
