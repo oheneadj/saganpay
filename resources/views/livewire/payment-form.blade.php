@@ -7,7 +7,8 @@
     errorMessage: $wire.entangle('errorMessage'),
     formData: $wire.entangle('formData'),
     step: $wire.entangle('step'),
-    verifiedName: $wire.entangle('verifiedName')
+    verifiedName: $wire.entangle('verifiedName'),
+    verifiedAmountDue: $wire.entangle('verifiedAmountDue')
 }" x-init="
     window.addEventListener('focus-error', event => {
         const field = event.detail.field;
@@ -134,15 +135,19 @@
 
                 <!-- Verified Name Display -->
                 <div x-show="verifiedName"
-                    class="mb-6 bg-emerald-50 border border-emerald-100 p-4 rounded-lg flex items-center gap-3">
-                    <div class="bg-emerald-100 p-2 rounded-full text-emerald-600">
+                    class="mb-6 bg-emerald-50 border border-emerald-100 p-4 rounded-lg flex items-start gap-3">
+                    <div class="bg-emerald-100 p-2 rounded-full text-emerald-600 flex-shrink-0">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                         </svg>
                     </div>
-                    <div>
+                    <div class="flex-1">
                         <p class="text-xs text-emerald-600 font-semibold uppercase tracking-wide">Verified Account</p>
                         <p class="text-gray-900 font-bold" x-text="verifiedName"></p>
+                        <p x-show="verifiedAmountDue" class="text-sm text-gray-600 mt-1">
+                            Amount Due: <span class="font-semibold text-gray-900"
+                                x-text="'GHS ' + parseFloat(verifiedAmountDue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></span>
+                        </p>
                     </div>
                 </div>
 

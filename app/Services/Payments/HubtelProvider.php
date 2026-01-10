@@ -194,7 +194,8 @@ class HubtelProvider implements PaymentProviderInterface
 
             $result = [
                 'verified_name' => null,
-                'session_id' => null
+                'session_id' => null,
+                'amount_due' => null
             ];
 
             foreach ($data as $item) {
@@ -204,6 +205,9 @@ class HubtelProvider implements PaymentProviderInterface
                 }
                 if ($itemKey === 'sessionId' || $itemKey === 'SessionId') {
                     $result['session_id'] = $item['Value'] ?? null;
+                }
+                if ($itemKey === 'amountDue' || $itemKey === 'AmountDue') {
+                    $result['amount_due'] = $item['Value'] ?? null;
                 }
             }
 

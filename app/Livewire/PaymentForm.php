@@ -30,10 +30,16 @@ class PaymentForm extends Component
     public int $step = 1;
     public string $verifiedName = '';
     public string $verificationSessionId = '';
+    public string $verifiedAmountDue = '';
+
 
     public function updatedFormDataServiceType($value)
     {
-        $this->reset(['step', 'verifiedName', 'verificationSessionId', 'errorMessage']);
+        $this->reset(['step', 'verifiedName', 'verificationSessionId', 'verifiedAmountDue', 'errorMessage']);
+        
+        // Clear account number when switching services
+        $this->formData['account_number'] = '';
+        
         // ECG services skip validation step
         if (in_array($value, ['ECG_Prepaid', 'ECG_Postpaid'])) {
             $this->step = 2;
@@ -113,6 +119,7 @@ class PaymentForm extends Component
             
             $this->verifiedName = $result['verified_name'] ?? 'Verified Account';
             $this->verificationSessionId = $result['session_id'] ?? '';
+            $this->verifiedAmountDue = $result['amount_due'] ?? '';
             
             // Auto-fill customer name if available
             if ($this->verifiedName) {
@@ -265,7 +272,7 @@ class PaymentForm extends Component
 
     public function resetForm()
     {
-        $this->reset(['formData', 'state', 'transactionId', 'paymentDate', 'paymentTime', 'clientReference', 'step', 'verifiedName', 'verificationSessionId', 'errorMessage']);
+        $this->reset(['formData', 'state', 'transactionId', 'paymentDate', 'paymentTime', 'clientReference', 'step', 'verifiedName', 'verificationSessionId', 'verifiedAmountDue', 'errorMessage']);
         $this->formData['service_type'] = 'ECG_Prepaid';
         $this->step = 1; // Default to ECG which is step 2
     }
